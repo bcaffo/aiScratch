@@ -3,8 +3,8 @@ library(jpeg)
 library(tidyverse)
 
 #download image data
-system("wget http://crcv.ucf.edu/data/Selfie/Selfie-dataset.tar.gz")
-system("tar -zxf Selfie-dataset.tar.gz")
+#system("wget http://crcv.ucf.edu/data/Selfie/Selfie-dataset.tar.gz")
+#system("tar -zxf Selfie-dataset.tar.gz")
 homedir = paste(getwd(), "/", sep = "")
 #homedir = "/home/bcaffo/sandboxes/aiScratch/"
 #homedir = "/users/bcaffo/"
@@ -16,16 +16,16 @@ homedir = paste(getwd(), "/", sep = "")
 imageDir = paste(homedir, "/Selfie-dataset/images/", sep ="")
 covDatLoc = paste(homedir, "/Selfie-dataset/selfie_dataset.txt", sep = "")
 
-trainDir = paste(homedir, "Selfie-dataset/images/trainDir", sep = "")
-testDir = paste(homedir, "Selfie-dataset/images/testDir", sep = "")
+trainDir = paste(homedir, "Selfie-dataset/trainDir", sep = "")
+testDir = paste(homedir, "Selfie-dataset/testDir", sep = "")
 
-ovalTrainDir = paste(homedir, "Selfie-dataset/images/trainDir/ovalTrainDir", sep = "")
-roundTrainDir = paste(homedir, "Selfie-dataset/images/trainDir/roundTrainDir", sep = "")
-heartTrainDir = paste(homedir, "Selfie-dataset/images/trainDir/heartTrainDir", sep = "")
+ovalTrainDir = paste(homedir, "Selfie-dataset/trainDir/ovalTrainDir", sep = "")
+roundTrainDir = paste(homedir, "Selfie-dataset/trainDir/roundTrainDir", sep = "")
+heartTrainDir = paste(homedir, "Selfie-dataset/trainDir/heartTrainDir", sep = "")
 
-ovalTestDir = paste(homedir, "Selfie-dataset/images/testDir/ovalTestDir", sep = "")
-roundTestDir = paste(homedir, "Selfie-dataset/images/testDir/roundTestDir", sep = "")
-heartTestDir = paste(homedir, "Selfie-dataset/images/testDir/heartTestDir", sep = "")
+ovalTestDir = paste(homedir, "Selfie-dataset/testDir/ovalTestDir", sep = "")
+roundTestDir = paste(homedir, "Selfie-dataset/testDir/roundTestDir", sep = "")
+heartTestDir = paste(homedir, "Selfie-dataset/testDir/heartTestDir", sep = "")
 
 dir.create(trainDir)
 dir.create(testDir)
@@ -74,52 +74,35 @@ subDat = covDat %>% select(id, files, filesFP, oval_face, round_face, heart_face
 N = nrow(subDat)
 
 trainSize = 1000; testSize = 500
-file.copy((subDat %>%  filter(oval_face == 1) %>% top_n(trainSize))$filesFP, ovalTrainDir )
-file.copy((subDat %>% filter(round_face == 1) %>% top_n(trainSize))$filesFP, roundTrainDir)
-file.copy((subDat %>% filter(heart_face == 1) %>% top_n(trainSize))$filesFP, heartTrainDir)
+#file.copy((subDat %>%  filter(oval_face == 1) %>% top_n(trainSize))$filesFP, ovalTrainDir )
+#file.copy((subDat %>% filter(round_face == 1) %>% top_n(trainSize))$filesFP, roundTrainDir)
+#file.copy((subDat %>% filter(heart_face == 1) %>% top_n(trainSize))$filesFP, heartTrainDir)
 
-file.copy((subDat %>%  filter(oval_face == 1) %>% slice((trainSize + 1) : (trainSize + testSize)))$filesFP, ovalTestDir )
-file.copy((subDat %>% filter(round_face == 1) %>% slice((trainSize + 1) : (trainSize + testSize)))$filesFP, roundTestDir)
-file.copy((subDat %>% filter(heart_face == 1) %>% slice((trainSize + 1) : (trainSize + testSize)))$filesFP, heartTestDir)
+#file.copy((subDat %>%  filter(oval_face == 1) %>% slice((trainSize + 1) : (trainSize + testSize)))$filesFP, ovalTestDir )
+#file.copy((subDat %>% filter(round_face == 1) %>% slice((trainSize + 1) : (trainSize + testSize)))$filesFP, roundTestDir)
+#file.copy((subDat %>% filter(heart_face == 1) %>% slice((trainSize + 1) : (trainSize + testSize)))$filesFP, heartTestDir)
 
 
 
 ## all of the iamges have the same size
-testImage = readJPEG(filesFP[16], native = TRUE)
+testImage = image_load(filesFP[16]) %>% image_to_array()
+summary(testImage)
 imageDim = dim(testImage)
 
 model <- keras_model_sequential() %>%
   layer_conv_2d(filters = 32, kernel_size = c(3, 3), activation = "relu",
-                input_shape = c(imageDim[1],imageDim[2], 3)) %>%
+                input_shape = imageDim) %>%
   layer_max_pooling_2d(pool_size = c(2, 2))%>% 
   layer_flatten() %>%
   layer_dense(units = 512, activation = "relu") %>%
   layer_dense(units = 1, activation = "sigmoid")
 
+model %>% compile(
+              loss = "binary_crossentropy",
+              optimizer = optimizer_rmsprop(lr = 1e-4),
+              metrics = c("acc")
+          )
 
-model <- keras_model_sequential() %>%
-  layer_conv_2d(filters = 32, kernel_size = c(3, 3), activation = "relu",
-                input_shape = c(imageDim[1],imageDim[2], 3)) %>%
-  layer_max_pooling_2d(pool_size = c(2, 2)) %>%
-  layer_flatten() %>%
-  layer_dense(units = 512, activation = "relu") %>%
-  layer_dense(units = 1, activation = "sigmoid")
-
-
-## building up the keras model
-model <- keras_model_sequential() %>%
-  layer_conv_2d(filters = 32, kernel_size = c(3, 3), activation = "relu",
-                input_shape = c(imageDim[1],imageDim[2], 3)) %>%
-  layer_max_pooling_2d(pool_size = c(2, 2)) %>%
-  layer_conv_2d(filters = 64, kernel_size = c(3, 3), activation = "relu") %>%
-  layer_max_pooling_2d(pool_size = c(2, 2)) %>%
-  layer_conv_2d(filters = 128, kernel_size = c(3, 3), activation = "relu") %>%
-  layer_max_pooling_2d(pool_size = c(2, 2)) %>%
-  layer_conv_2d(filters = 128, kernel_size = c(3, 3), activation = "relu") %>%
-  layer_max_pooling_2d(pool_size = c(2, 2)) %>%
-  layer_flatten() %>%
-  layer_dense(units = 512, activation = "relu") %>%
-  layer_dense(units = 1, activation = "sigmoid")
 
 train_datagen = image_data_generator(rescale = 1/255)
 validation_datagen = image_data_generator(rescale = 1/255)
@@ -127,7 +110,7 @@ validation_datagen = image_data_generator(rescale = 1/255)
 train_generator = flow_images_from_directory(
   trainDir,
   train_datagen,
-  target_size = imageDim,
+  target_size = imageDim[1 : 2],
   batch_size = 20,
   class_mode = "binary"
 )
@@ -135,7 +118,7 @@ train_generator = flow_images_from_directory(
 validation_generator = flow_images_from_directory(
   testDir,
   validation_datagen,
-  target_size = imageDim,
+  target_size = imageDim[1 : 2],
   batch_size = 20,
   class_mode = "binary"
 )
