@@ -1,32 +1,48 @@
 library(keras)
+library(reticulate)
 library(jpeg)
 library(tidyverse)
 
+cenv = "r-tensorflow"
+envs = conda_list()$name
+# make sure in the right env
+source_condaenv = function(condaenv) {
+  use_condaenv(condaenv)
+  sourcer_cmd = paste0("source activate ", 
+                       condaenv)
+  system(sourcer_cmd)
+}
+source_condaenv(cenv)
+# Sys.setenv(
+#   "CONDA_PKGS_DIRS" = path.expand("~/.conda/pkgs"))
+
 #download image data
-system("wget http://crcv.ucf.edu/data/Selfie/Selfie-dataset.tar.gz")
-system("tar -zxf Selfie-dataset.tar.gz")
-homedir = paste(getwd(), "/", sep = "")
+#system("wget http://crcv.ucf.edu/data/Selfie/Selfie-dataset.tar.gz")
+#system("tar -zxf Selfie-dataset.tar.gz")
+
+homedir = "~/sandboxes/aiScratch/"
+#homedir = paste(getwd(), "/", sep = "")
 #homedir = "/home/bcaffo/sandboxes/aiScratch/"
 #homedir = "/users/bcaffo/"
 
+
 #imageDir = "/home/bcaffo/sandboxes/appianSleep/Selfie-dataset/images/"
-
-
 
 imageDir = paste(homedir, "/Selfie-dataset/images/", sep ="")
 covDatLoc = paste(homedir, "/Selfie-dataset/selfie_dataset.txt", sep = "")
 
-trainDir = paste(homedir, "Selfie-dataset/images/trainDir", sep = "")
-testDir = paste(homedir, "Selfie-dataset/images/testDir", sep = "")
+trainDir = paste(homedir, "Selfie-dataset/trainDir", sep = "")
+testDir = paste(homedir, "Selfie-dataset/testDir", sep = "")
 
-ovalTrainDir = paste(homedir, "Selfie-dataset/images/trainDir/ovalTrainDir", sep = "")
-roundTrainDir = paste(homedir, "Selfie-dataset/images/trainDir/roundTrainDir", sep = "")
-heartTrainDir = paste(homedir, "Selfie-dataset/images/trainDir/heartTrainDir", sep = "")
+ovalTrainDir = paste(homedir, "Selfie-dataset/trainDir/ovalTrainDir", sep = "")
+roundTrainDir = paste(homedir, "Selfie-dataset/trainDir/roundTrainDir", sep = "")
+heartTrainDir = paste(homedir, "Selfie-dataset/trainDir/heartTrainDir", sep = "")
 
-ovalTestDir = paste(homedir, "Selfie-dataset/images/testDir/ovalTestDir", sep = "")
-roundTestDir = paste(homedir, "Selfie-dataset/images/testDir/roundTestDir", sep = "")
-heartTestDir = paste(homedir, "Selfie-dataset/images/testDir/heartTestDir", sep = "")
+ovalTestDir = paste(homedir, "Selfie-dataset/testDir/ovalTestDir", sep = "")
+roundTestDir = paste(homedir, "Selfie-dataset/testDir/roundTestDir", sep = "")
+heartTestDir = paste(homedir, "Selfie-dataset/testDir/heartTestDir", sep = "")
 
+## Don't need to rerun these if you already ran them
 dir.create(trainDir)
 dir.create(testDir)
 dir.create(ovalTrainDir)
@@ -36,9 +52,6 @@ dir.create(ovalTestDir)
 dir.create(roundTestDir)
 dir.create(heartTestDir)
 
-
-
-#Gender: is female. 
 #Age: baby, child, teenager, youth, middle age, senior. 
 #Race: white, black, asian. 
 #Face shape: oval, round, heart. 
@@ -84,9 +97,10 @@ file.copy((subDat %>% filter(heart_face == 1) %>% slice((trainSize + 1) : (train
 
 
 
-## all of the iamges have the same size
+## all of the images have the same size
 testImage = readJPEG(filesFP[16], native = TRUE)
 imageDim = dim(testImage)
+
 
 model <- keras_model_sequential() %>%
   layer_conv_2d(filters = 32, kernel_size = c(3, 3), activation = "relu",
@@ -95,6 +109,17 @@ model <- keras_model_sequential() %>%
   layer_flatten() %>%
   layer_dense(units = 512, activation = "relu") %>%
   layer_dense(units = 1, activation = "sigmoid")
+
+
+summary(model)
+
+
+model %>% compile(
+  loss = "binary_crossentropy",
+  optimizer = optimizer_rmsprop(lr = 1e-4),
+  metrics = c("acc")
+)
+
 
 
 model <- keras_model_sequential() %>%
@@ -141,10 +166,15 @@ validation_generator = flow_images_from_directory(
 )
 
 
+batch <- generator_next(train_generator)
+str(batch)
+
+epochs = 5
+
 history <- model %>% fit_generator(
   train_generator,
   steps_per_epoch = 100,
-  epochs = 30,
+  epochs = epochs,
   validation_data = validation_generator,
   validation_steps = 50
 )
