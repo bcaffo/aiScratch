@@ -19,6 +19,7 @@ source_condaenv(cenv)
 #download image data
 #system("wget http://crcv.ucf.edu/data/Selfie/Selfie-dataset.tar.gz")
 #system("tar -zxf Selfie-dataset.tar.gz")
+<<<<<<< HEAD
 
 homedir = "~/sandboxes/aiScratch/"
 #homedir = paste(getwd(), "/", sep = "")
@@ -87,30 +88,38 @@ subDat = covDat %>% select(id, files, filesFP, oval_face, round_face, heart_face
 N = nrow(subDat)
 
 trainSize = 1000; testSize = 500
-file.copy((subDat %>%  filter(oval_face == 1) %>% top_n(trainSize))$filesFP, ovalTrainDir )
-file.copy((subDat %>% filter(round_face == 1) %>% top_n(trainSize))$filesFP, roundTrainDir)
-file.copy((subDat %>% filter(heart_face == 1) %>% top_n(trainSize))$filesFP, heartTrainDir)
+#file.copy((subDat %>%  filter(oval_face == 1) %>% top_n(trainSize))$filesFP, ovalTrainDir )
+#file.copy((subDat %>% filter(round_face == 1) %>% top_n(trainSize))$filesFP, roundTrainDir)
+#file.copy((subDat %>% filter(heart_face == 1) %>% top_n(trainSize))$filesFP, heartTrainDir)
 
-file.copy((subDat %>%  filter(oval_face == 1) %>% slice((trainSize + 1) : (trainSize + testSize)))$filesFP, ovalTestDir )
-file.copy((subDat %>% filter(round_face == 1) %>% slice((trainSize + 1) : (trainSize + testSize)))$filesFP, roundTestDir)
-file.copy((subDat %>% filter(heart_face == 1) %>% slice((trainSize + 1) : (trainSize + testSize)))$filesFP, heartTestDir)
+#file.copy((subDat %>%  filter(oval_face == 1) %>% slice((trainSize + 1) : (trainSize + testSize)))$filesFP, ovalTestDir )
+#file.copy((subDat %>% filter(round_face == 1) %>% slice((trainSize + 1) : (trainSize + testSize)))$filesFP, roundTestDir)
+#file.copy((subDat %>% filter(heart_face == 1) %>% slice((trainSize + 1) : (trainSize + testSize)))$filesFP, heartTestDir)
 
 
 
+<<<<<<< HEAD
 ## all of the images have the same size
 testImage = readJPEG(filesFP[16], native = TRUE)
+## all of the iamges have the same size
+#testImage = image_load(filesFP[16]) %>% image_to_array()
+#summary(testImage)
 imageDim = dim(testImage)
 
 
 model <- keras_model_sequential() %>%
   layer_conv_2d(filters = 32, kernel_size = c(3, 3), activation = "relu",
-                input_shape = c(imageDim[1],imageDim[2], 3)) %>%
+                input_shape = imageDim) %>%
   layer_max_pooling_2d(pool_size = c(2, 2))%>% 
   layer_flatten() %>%
   layer_dense(units = 512, activation = "relu") %>%
   layer_dense(units = 1, activation = "sigmoid")
 
-
+model %>% compile(
+              loss = "binary_crossentropy",
+              optimizer = optimizer_rmsprop(lr = 1e-4),
+              metrics = c("acc")
+          )
 summary(model)
 
 
@@ -145,6 +154,8 @@ model <- keras_model_sequential() %>%
   layer_flatten() %>%
   layer_dense(units = 512, activation = "relu") %>%
   layer_dense(units = 1, activation = "sigmoid")
+=======
+>>>>>>> 10a28ea4468dd602297a124498b7f91003c849b9
 
 train_datagen = image_data_generator(rescale = 1/255)
 validation_datagen = image_data_generator(rescale = 1/255)
@@ -152,7 +163,7 @@ validation_datagen = image_data_generator(rescale = 1/255)
 train_generator = flow_images_from_directory(
   trainDir,
   train_datagen,
-  target_size = imageDim,
+  target_size = imageDim[1 : 2],
   batch_size = 20,
   class_mode = "binary"
 )
@@ -160,7 +171,7 @@ train_generator = flow_images_from_directory(
 validation_generator = flow_images_from_directory(
   testDir,
   validation_datagen,
-  target_size = imageDim,
+  target_size = imageDim[1 : 2],
   batch_size = 20,
   class_mode = "binary"
 )
